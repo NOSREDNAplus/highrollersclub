@@ -110,8 +110,11 @@ def mainloop():
 class Buttons(discord.ui.View):
     def __init__(self, *, timeout=180):
         super().__init__(timeout=timeout)
-    @discord.ui.button(label="Button",style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="Gamble",style=discord.ButtonStyle.gray)
     async def gray_button(self,button:discord.ui.Button,interaction:discord.Interaction):
+        await interaction.response.edit_message(content=f"This is an edited button response!")
+    @discord.ui.button(label="Don't Gamble",style=discord.ButtonStyle.gray)
+    async def red_button(self,button:discord.ui.Button,interaction:discord.Interaction):
         await interaction.response.edit_message(content=f"This is an edited button response!")
 #commands
 @client.command()
