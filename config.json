@@ -1,48 +1,6 @@
 {
-      "token": "MTMyNjQxOTg2NzI3MTY5NjQwNQ.GRPRZj.TMIZGugrZ4OpgLWqoqnUn9AAI-ln7OhNyJXaFA",
+      "token": "",
+      "admins": [],
       "guilds": {
-            "1305340435610210464": {
-                  "accounts": {
-                        "bots": {},
-                        "users": {
-                              "749754759044661258": {
-                                    "$": 67,
-                                    "b$": 0.0,
-                                    "cs": 300,
-                                    "accnum": "TDjvDbMDsOnpTkyk",
-                                    "stats": {},
-                                    "i": {},
-                                    "s": {},
-                                    "t": [],
-                                    "cds": {
-                                          "beg": {
-                                                "t": 0
-                                          }
-                                    }
-                              },
-                              "751508989669539881": {
-                                    "$": 11,
-                                    "b$": 0.0,
-                                    "cs": 300,
-                                    "accnum": "VzdozsWndTCLpsxd",
-                                    "stats": {},
-                                    "i": {},
-                                    "s": {},
-                                    "t": [],
-                                    "cds": {
-                                          "beg": {
-                                                "t": 0
-                                          },
-                                          "work": {
-                                                "t": 0
-                                          }
-                                    }
-                              }
-                        }
-                  },
-                  "plots": {},
-                  "stocks": {},
-                  "orginizations": {}
-            }
       }
 }
