@@ -71,7 +71,7 @@ def usercheck():
     for g in client.guilds:
         g.id = str(g.id)
         if not g.id in d["guilds"].copy().keys():
-            d["guilds"][g.id] = {"accounts": {"bots": {}, "users": {}}, "plots": {}, "stocks": {}, "orginizations": {}}
+            d["guilds"][g.id] = {"accounts": {"users": {}}, "plots": {}, "stocks": {}, "orginizations": {}, "data": {"jackpot": 0}}
         for u in g.members:
             if u.bot or str(u.id) in d["guilds"][g.id]["accounts"]["users"].copy().keys():
                 pass
@@ -94,7 +94,7 @@ def intrestcheck():
     d = asyncio.run(get_data())
     for g in dict(d["guilds"]).keys():
         for u in dict(d["guilds"][g]["accounts"]["users"]).values():
-            u["b$"] += u["b$"] * 0.002
+            u["b$"] += u["b$"] * 0.02
     asyncio.run(update_data(d))
     asyncio.run(log("g", "Intrest add Completed!"))
 def mainloop():
@@ -107,15 +107,6 @@ def mainloop():
             o = 0
         sleep(1)
         o +=1
-class Buttons(discord.ui.View):
-    def __init__(self, *, timeout=180):
-        super().__init__(timeout=timeout)
-    @discord.ui.button(label="Gamble",style=discord.ButtonStyle.gray)
-    async def gray_button(self,button:discord.ui.Button,interaction:discord.Interaction):
-        await interaction.response.edit_message(content=f"This is an edited button response!")
-    @discord.ui.button(label="Don't Gamble",style=discord.ButtonStyle.gray)
-    async def red_button(self,button:discord.ui.Button,interaction:discord.Interaction):
-        await interaction.response.edit_message(content=f"This is an edited button response!")
 #commands
 @client.command()
 async def profile(ctx: discord.Message, *arg):
@@ -165,38 +156,50 @@ async def leaderboard(ctx: discord.Message):
 @client.command()
 async def money(ctx:discord.Message, *arg):
     d = await get_data()
+    if not "banking" in d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]:
+        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["banking"] = {"t": 0}
+        await update_data(d)
+        d = await get_data()
     if arg[0].lower() == "bank":
-        if str(arg[1]).isnumeric():
-            if int(arg[1]) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
-                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg[1])
-                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] += int(arg[1])
+        if await getcooldown("banking", ctx) == 0:
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["banking"]["t"] = 900
+            if str(arg[1]).isnumeric():
+                if int(arg[1]) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg[1])
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] += int(arg[1])
+                    await update_data(d)
+                    await ctx.reply(f"Successfully banked `${arg[1]}`!")
+                else:
+                    await ctx.reply("Can't bank more than you have!")
+            elif arg[1].lower() == "all":
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]
                 await update_data(d)
-                await ctx.reply(f"Successfully banked ${arg[1]}!")
-            else:
-                await ctx.reply("Can't bank more than you have!")
-        elif arg[1].lower() == "all":
-            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]
-            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]
-            await update_data(d)
-            await ctx.reply("Successfully banked all your money!")
+                await ctx.reply("Successfully banked all your money!")
+        else:
+            await ctx.reply(f"`{await getcooldown("banking", ctx)}` seconds left until you can bank/unbank again!")
     elif arg[0].lower() == "unbank":
-        if str(arg[1]).isnumeric():
-            if int(arg[1]) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]:
-                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] -= int(arg[1])
-                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += int(arg[1])
+        if await getcooldown("banking", ctx) == 0:
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["banking"]["t"] = 900
+            if str(arg[1]).isnumeric():
+                if int(arg[1]) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]:
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] -= int(arg[1])
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += int(arg[1])
+                    await update_data(d)
+                    await ctx.reply(f"Successfully un-banked `${arg[1]}`!")
+                else:
+                    await ctx.reply("Can't un-bank more than you have!")
+            elif arg[1].lower() == "all":
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] -= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]
                 await update_data(d)
-                await ctx.reply(f"Successfully un-banked ${arg[1]}!")
-            else:
-                await ctx.reply("Can't un-bank more than you have!")
-        elif arg[1].lower() == "all":
-            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]
-            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"] -= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["b$"]
-            await update_data(d)
-            await ctx.reply("Successfully un-banked all your money!")
+                await ctx.reply("Successfully un-banked all your money!")
+        else:
+            await ctx.reply(f"`{await getcooldown("banking", ctx)}` seconds left until you can bank/unbank again!")
     elif arg[0].lower() == "round":
         d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] = round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"], 2)
         await update_data(d)
-        await ctx.reply(f"Successfully rounded your money to ${d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]}!")
+        await ctx.reply(f"Successfully rounded your money to `${d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]}`!")
 @client.command()
 async def work(ctx: discord.Message):
     d = await get_data()
@@ -205,20 +208,24 @@ async def work(ctx: discord.Message):
         await update_data(d)
         d = await get_data()
     if await getcooldown("work", ctx) == 0:
-        c = random.randint(0, 2)
-        sl = ["McDonalds", "Wendys", "Five Guys", "Burger King", "Raising Canes", "Starbucks"]
+        c = random.randint(0, 3)
+        sl = ["McDonalds", "Wendys", "Five Guys", "Burger King", "Raising Canes", "Starbucks", "Jimmy Johns", "Arby's"]
         match c:
             case 0:
                 i = random.randint(5, 25)
-                await ctx.reply(f"You posed as a begger on a street, you gain ${i}!")
+                await ctx.reply(f"You posed as a begger on a street, you gain `${i}`!")
                 d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += i
             case 1:
                 i = random.randint(35, 120)
-                await ctx.reply(f"You worked at a {random.choice(sl)}, you gain ${i}!")
+                await ctx.reply(f"You worked at a {random.choice(sl)}, you gain `${i}`!")
                 d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += i
             case 2:
                 i = random.randint(45, 80)
-                await ctx.reply(f"You worked as a delivery driver, you gain ${i}!")
+                await ctx.reply(f"You worked as a delivery driver, you gain `${i}`!")
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += i
+            case 3:
+                i = random.randint(25, 50)
+                await ctx.reply(f"You mowed some lawns, you gain `${i}`!")
                 d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += i
         d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["work"]["t"] = 60
         await update_data(d)
@@ -228,11 +235,11 @@ async def work(ctx: discord.Message):
 async def roulette(ctx: discord.Message, arg1: str):
     d = await get_data()
     if arg1.isnumeric():
-        if int(arg1) <= 25:
+        if int(arg1) >= 25:
             if int(arg1) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
                 c1 = random.randint(1, 38)
                 if c1 == 1:
-                    m = (random.randint(20, 100))/20
+                    m = (random.randint(20, 100))/10
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)] * m
                     await ctx.reply(f"## You spin the wheel...\nYou won `${d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)] * m}`!")
                 else:
@@ -244,11 +251,66 @@ async def roulette(ctx: discord.Message, arg1: str):
         else:
             await ctx.reply("Can't bet less than `$25`!")
 @client.command()
-async def blackjack(ctx: discord.Message):
-    await ctx.reply("Hello World!", view=Buttons())
+async def slots(ctx: discord.Message):
+    d = await get_data()
+    if d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] >= 5:
+        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= 5
+        d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] += 5
+        c = random.randint(1, 5000)
+        if c == 1:
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]
+            d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] = 0
+            await ctx.reply(f"## You spin the slots...\n# :seven::seven::seven:\nYou got the jackpot!... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
+        else:
+            symbols = [":heart:", ":coin:", ":seven:", ":crown:", ":spades:", ":diamonds:", ":joker:"]
+            o = []
+            while len(o) != 3:
+                o.append(random.choice(symbols))
+            await ctx.reply(f"## You spin the slots...\n# {o[0]}{o[1]}{o[2]}\nSadly you don't get a jackpot... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
+        await update_data(d)
+    else:
+        await ctx.reply("You don't have enough money!")
+@client.command()
+async def rob(ctx: discord.Message, arg1):
+    d = await get_data()
+    id = await usernametrans(arg1, ctx.guild)
+    #if you're dumb enough to rob yourself do it
+    if id != None:
+        if d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] > 0:
+            c = random.randint(1, 50)
+            dn = ctx.guild.get_member_named(arg1).display_name
+            if c == 1:
+                p = random.randint(5, 9)
+                await ctx.reply(f"## You try to rob {dn}...\nAnd you succede, you gain `${round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)}`!")
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] -= round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)
+            else:
+                await ctx.reply(f"## You try to rob {dn}...\nAnd you fail, you're fined `$500`!")
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= 500
+            await update_data(d)
+        else:
+            await ctx.reply("You can't rob someone you're broke!")
+    else:
+        await ctx.reply("This user doesn't exist!")
 @client.command(name="?")
 async def help(ctx: discord.Message):
-    await ctx.reply("## Commmands\n- `$profile`: <optional: user> - Tells you information about this user's account!\n- `$stats` - Tells you how many times you've done certain actions\n- `$money`: <required: bank | unbank | round> <req: amount | 'all'> - Allows you to bank and unbank your money\n- `$work` - Make a random amount of money by working an odd job")
+    await ctx.reply("## Commmands\n- `$profile`: <optional: user> - Tells you information about this user's account!\n- `$stats` - Tells you how many times you've done certain actions\n- `$money`: <required: bank | unbank | round> <req: amount | 'all'> - Allows you to bank and unbank your money\n- `$work` - Make a random amount of money by working an odd job\n- `$slots` - Roll the slots, increase the jackpot or win it!\n- `$roulette` <required: amount> - Spin the wheel and double or more your bet!\n- `$rob` <required: user> - Rob someone or get fined(oh no!)!")
+#admin command
+@client.command(name="give-money")
+async def givemoney(ctx: discord.Message, arg1, arg2):
+    d = await get_data()
+    id = await usernametrans(arg1, ctx.guild)
+    if ctx.author.id in d["admins"] or ctx.author.id == ctx.guild.owner_id:
+        if id != None:
+            if str(arg2).isnumeric():
+                arg2 = int(arg2)
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] += arg2
+                await ctx.reply(f"Successfully added `${arg2}` to {arg1}'s account")
+                await update_data(d)
+        else:
+            await ctx.reply("This user doesn't exist!")
+    else:
+        await ctx.reply("You have to be an admin or a server owner to use this command!")
 @client.event
 async def on_ready():
     await client.change_presence(status=discord.Status.online, activity=discord.Game("Gambling"))
