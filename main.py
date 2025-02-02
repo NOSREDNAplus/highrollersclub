@@ -311,6 +311,19 @@ async def givemoney(ctx: discord.Message, arg1, arg2):
             await ctx.reply("This user doesn't exist!")
     else:
         await ctx.reply("You have to be an admin or a server owner to use this command!")
+@client.command("clear-cooldowns")
+async def clearcooldowns(ctx: discord.Message, arg1):
+    d = await get_data()
+    id = await usernametrans(arg1, ctx.guild)
+    if ctx.author.id in d["admins"] or ctx.author.id == ctx.guild.owner_id:
+        if id != None:
+            for i in d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["cds"]:
+                i["t"] = 0
+            await update_data(d)
+        else:
+            await ctx.reply("This user doesn't exist!")
+    else:
+        await ctx.reply("You have to be an admin or a server owner to use this command!")
 @client.event
 async def on_ready():
     await client.change_presence(status=discord.Status.online, activity=discord.Game("Gambling"))
