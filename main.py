@@ -359,7 +359,7 @@ async def bank(ctx: discord.Message, *arg):
                 else:
                     maxl = 0
                 if int(arg[1]) <= maxl:
-                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][len(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"])+1] = {"ts": 0, "a": int(arg[1])}
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][len(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"])+1] = {"ts": 0, "a": int(arg[1]), "o": round(int(arg[1]) + int(arg[1]) * 0.05)}
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += int(arg[1])
                     await ctx.reply(f"Successfully loaned `${arg[1]}`!")
                     await update_data(d)
@@ -368,15 +368,30 @@ async def bank(ctx: discord.Message, *arg):
             else:
                 await ctx.reply(f"`{await getcooldown("loaning", ctx)}` seconds left until you can loan money!")
                 await statincrease("loaning", "Loan Shark?", ctx)
+        elif str(arg[1]).lower() == "payback" and str(arg[2]).isnumeric() and str(arg[3]).isnumeric():
+            if int(arg[2]) <= (len(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"])):
+                if int(arg[3]) < d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][str(arg[2])]["o"] :
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][str(arg[2])]["o"] -= int(arg[3])
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg[3])
+                    await ctx.reply(f"Successfully payed back `${arg[3]}` on loan `{int(arg[2])}`!")                
+                elif int(arg[3]) >= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][str(arg[2])]["o"] :
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][str(arg[2])]["o"]
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cs"] += 5
+                    #add scaling credit score increase
+                    await ctx.reply(f"Successfully payed back `${d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"][str(arg[2])]["o"]}` on loan `{arg[2]}`!")
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["l"].pop(str(arg[2]))
+                await update_data(d)
+            else:
+                await ctx.reply("You don't have this loan!")
     elif arg[0].lower() == "loans":
         ud = d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]
         if len(ud["l"]) != 0:
             ll = []
-            for i in ud["l"].values():
-                ll.append((i["ts"], i["a"])) #time since, amount
+            for i in ud["l"].items():
+                ll.append((i[1]["ts"], i[1]["a"], i[0], i[1]["o"])) #time since, amount
             pl = []
             for i in ll:
-                pl.append(f"- **Owed**: `${round(i[1] + (i[1] * 0.12), 2)}` **Loaned**:`${i[1]}` - `{i[0]}` seconds ago")
+                pl.append(f"{i[2]}. **Owed**: `${i[3]}` **Loaned**:`${i[1]}` - `{i[0]}` seconds ago")
             await ctx.reply(f"## Your Loans\n{'\n'.join(pl)}")
         else:
             await ctx.reply(f"## Your Loans\n-# non-existent...")
