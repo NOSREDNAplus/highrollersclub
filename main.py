@@ -400,7 +400,7 @@ async def help(ctx: discord.Message):
     d = await get_data()
     await ctx.reply("## Commmands\n- `$profile`: <optional: user> - Tells you information about this user's account!\n- `$stats` - Tells you how many times you've done certain actions\n- `$money`: <required: bank | unbank | round | give> <req: amount | 'all'> - Allows you to bank and unbank your money\n- `$work` - Make a random amount of money by working an odd job\n- `$slots` - Roll the slots, increase the jackpot or win it!\n- `$roulette` <required: amount> - Spin the wheel and double or more your bet!\n- `$rob` <required: user> - Rob someone or get fined (oh no!)!\n- `$suggest`: <required: suggestion> <IN PROGRESS>")
     if ctx.author.id in d["guilds"][str(ctx.guild.id)]["admins"] or ctx.author.id == ctx.guild.owner_id or ctx.author.id in d["developers"]:
-        await ctx.reply("## Admin Commands\n- `$give-money`: <required: user> <required: amount>\n- `$clear-cooldowns`: <required: user>\n- `$add-admin`: <required: user>\n- `$remove-admin`: <required: user>\n- `$annoy`: <required: user> <required: times> <optional: message>\n- `$set-money`: <required: user> <required: amount>")
+        await ctx.reply("## Admin Commands\n- `$give-money`: <required: user> <required: amount>\n- `$clear-cooldowns`: <required: user>\n- `$add-admin`: <required: user>\n- `$remove-admin`: <required: user>\n- `$annoy`: <required: user> <required: times> <optional: message>\n- `$set-money`: <required: user> <required: amount>\n- `$admins` - Tells you the admins in the server")
 #admin commands
 @client.command(name="give-money")
 async def givemoney(ctx: discord.Message, arg1, arg2):
@@ -497,6 +497,19 @@ async def removeadmin(ctx: discord.Message, arg1):
             await ctx.reply(f"Successfully removed {arg1} as an admin!")
         else:
             await ctx.reply("This user doesn't exist!")
+    else:
+        await ctx.reply("You have to be an admin, server owner, or a developer to use this command!")
+@client.command()
+async def admins(ctx: discord.Message):
+    d = await get_data()
+    if ctx.author.id in d["guilds"][str(ctx.guild.id)]["admins"] or ctx.author.id == ctx.guild.owner_id or ctx.author.id in d["developers"]:
+        al = []
+        for i in d["guilds"][str(ctx.guild.id)]["admins"]:
+            al.append(f"- **{ctx.guild.get_member(int(i)).display_name}**")
+        if al != []:
+            await ctx.reply(f"## Admins\n{"\n".join(al)}")
+        else:
+            await ctx.reply(f"## Admins\n-# non.")
     else:
         await ctx.reply("You have to be an admin, server owner, or a developer to use this command!")
 @client.event
