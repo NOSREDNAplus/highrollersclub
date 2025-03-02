@@ -99,16 +99,29 @@ def intrestcheck():
             u["b$"] += u["b$"] * 0.02
     asyncio.run(update_data(d))
     asyncio.run(log("g", "Intrest add Completed!"))
+def cooldownfix():
+    d = asyncio.run(get_data())
+    for g in dict(d["guilds"]).keys():
+        for u in dict(d["guilds"][g]["accounts"]["users"]).values():
+            for cds in dict(u["cds"]).values():
+                if cds['t'] == -1:
+                    cds['t'] = 0
+    asyncio.run(update_data(d))
+    asyncio.run(log("g", "Intrest add Completed!"))
 def mainloop():
-    o = 0
-    while True:
-        usercheck()
-        cdcheck()
-        if o >= 900:
-            intrestcheck()
-            o = 0
-        sleep(1)
-        o +=1
+    try:
+        o = 0
+        cooldownfix()
+        while True:
+            usercheck()
+            cdcheck()
+            if o >= 900:
+                intrestcheck()
+                o = 0
+            sleep(1)
+            o +=1
+    except Exception as e:
+        mainloop(); asyncio.run(f"Main loop restarted, error encountered({e})")
 #commands
 @client.command()
 async def profile(ctx: discord.Message, *arg):
@@ -207,7 +220,7 @@ async def money(ctx:discord.Message, *arg):
         await ctx.reply(f"Successfully rounded your money to `${d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]}`!")
     elif arg[0].lower() == "give":
         print(arg)
-        id = await usernametrans(arg[2], ctx.guild)
+        id = await usernametrans(arg[1], ctx.guild)
         if id != None:
             if str(arg[2]).isnumeric():
                 if int(arg[2]) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
@@ -234,7 +247,7 @@ async def work(ctx: discord.Message):
         d = await get_data()
     if await getcooldown("work", ctx) == 0:
         c = random.randint(0, 3)
-        sl = ["McDonalds", "Wendys", "Five Guys", "Burger King", "Raising Canes", "Starbucks", "Jimmy Johns", "Arby's"]
+        sl = ["McDonalds", "Wendys", "Five Guys", "Burger King", "Raising Canes", "Starbucks", "Jimmy Johns", "Arby's", "Home Depot", "Ikea"]
         match c:
             case 0:
                 i = random.randint(5, 25)
@@ -263,7 +276,7 @@ async def roulette(ctx: discord.Message, arg1: str):
     if arg1.isnumeric():
         if int(arg1) >= 25:
             if int(arg1) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
-                c1 = random.randint(1, 38)
+                c1 = random.randint(1, 10)
                 if c1 == 1:
                     m = (random.randint(20, 100))/10
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)] * m
@@ -283,16 +296,27 @@ async def slots(ctx: discord.Message):
     if d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] >= 5:
         d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= 5
         d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] += 5
-        c = random.randint(1, 5000)
-        if c == 1:
+        symbols = [":heart:", ":coin:", ":seven:", ":crown:", ":spades:", ":diamonds:", ":joker:"]
+        o = []
+        while len(o) != 3:
+            o.append(random.choice(symbols))
+        if o[0] == ":seven:" and o[1] == ":seven:" and o[2] == ":seven:":
             d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]
             d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] = 0
             await ctx.reply(f"## You spin the slots...\n# :seven::seven::seven:\nYou got the jackpot!... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
+        elif o[0] == ":crown:" and o[1] == ":crown:" and o[2] == ":crown:":
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.5)
+            d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] -= (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.5)
+            await ctx.reply(f"## You spin the slots...\n# :crown::crown::crown:\nYou got the jackpot!... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
+        elif o[0] == ":coin:" and o[1] == ":coin:" and o[2] == ":coin:":
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.2)
+            d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] -= (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.2)
+            await ctx.reply(f"## You spin the slots...\n# :coin::coin::coin:\nYou got the jackpot!... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
+        elif o[0] == ":heart:" and o[1] == ":heart:" and o[2] == ":coheartin:":
+            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.3)
+            d["guilds"][str(ctx.guild.id)]["data"]["jackpot"] -= (d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]*0.3)
+            await ctx.reply(f"## You spin the slots...\n# :heart::heart::heart:\nYou got the jackpot!... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
         else:
-            symbols = [":heart:", ":coin:", ":seven:", ":crown:", ":spades:", ":diamonds:", ":joker:"]
-            o = []
-            while len(o) != 3:
-                o.append(random.choice(symbols))
             await ctx.reply(f"## You spin the slots...\n# {o[0]}{o[1]}{o[2]}\nSadly you don't get a jackpot... The jackpot is now `${d["guilds"][str(ctx.guild.id)]["data"]["jackpot"]}`")
         await update_data(d)
         await statincrease("gambling", "Avid Gambler", ctx)
@@ -314,14 +338,14 @@ async def rob(ctx: discord.Message, arg1):
                 dn = ctx.guild.get_member_named(arg1).display_name
                 if c == 1:
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["rob"]["t"] = 900
-                    p = random.randint(5, 9)
+                    p = random.randint(2, 3)
                     await ctx.reply(f"## You try to rob {dn}...\nAnd you succede, you gain `${round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)}`!")
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)
                     d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] -= round(d["guilds"][str(ctx.guild.id)]["accounts"]["users"][id]["$"] * float(f"0.0{p}"), 2)
                     await statincrease("robbing", "Robin Hood", ctx)
                 else:
-                    await ctx.reply(f"## You try to rob {dn}...\nAnd you fail, you're fined `$500`!")
-                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= 500
+                    await ctx.reply(f"## You try to rob {dn}...\nAnd you fail, you're fined `$50`!")
+                    d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= 50
                     await statincrease("notrobbing", "A Bad Pickpocket", ctx)
                 await update_data(d)
             else:
@@ -333,7 +357,6 @@ async def rob(ctx: discord.Message, arg1):
 @client.command()
 async def bank(ctx: discord.Message, *arg):
     d = await get_data()
-    print(arg)
     if not "loaning" in d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]:
         d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["loaning"] = {"t": 0}
         await update_data(d)
@@ -395,10 +418,103 @@ async def bank(ctx: discord.Message, *arg):
             await ctx.reply(f"## Your Loans\n{'\n'.join(pl)}")
         else:
             await ctx.reply(f"## Your Loans\n-# non-existent...")
+@client.command()
+async def blackjack(ctx: discord.Message, arg1):
+    d = await get_data()
+    if not "blackjack" in d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]:
+        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["blackjack"] = {"t": 0}
+        await update_data(d)
+        d = await get_data()
+    if str(arg1).isnumeric():
+        if await getcooldown("blackjack", ctx) != -1:
+            if int(arg1) <= d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"]:
+                d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["blackjack"]["t"] = -1 ##prevents multiple games
+                await update_data(d)
+                d = await get_data()
+                button = discord.ui.Button(label="Hit", style=discord.ButtonStyle.red)
+                button2 = discord.ui.Button(label="Stay", style=discord.ButtonStyle.grey)
+                randcard = [":hearts:", ":diamonds:", ":clubs:", ":spades:"]
+                values = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"]
+                dvalues = ["A", "K", "Q", "J", "10", "9", "8", "7"]
+                async def cardtrans(c:list) -> int:
+                    v, ace = 0, False
+                    for i in c:
+                        if str(i).isalpha():
+                            match i:
+                                case "A":
+                                    if not ace:
+                                        v += 11
+                                        ace = True
+                                    else:
+                                        v += 1
+                                case "K":
+                                    v += 10
+                                case "Q":
+                                    v += 10
+                                case "J":
+                                    v += 10
+                        elif str(i).isnumeric():
+                            v += int(i)
+                    return v
+                async def button_callback(interaction:discord.Interaction): #hit button
+                    if interaction.user.name == ctx.author.name:
+                        await interaction.response.edit_message(content=f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & ?{random.choice(randcard)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)}", view=view)
+                        pdeck.append(random.choice(values))
+                        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["blackjack"]["t"] = 0
+                        view.remove_item(button)
+                        view.remove_item(button2)
+                        if await cardtrans(pdeck) > 21:
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} & {pdeck[2]}{random.choice(randcard)} **Value**: {await cardtrans(pdeck)}\n## You busted, better luck next time!", view=view)
+                            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg1)
+                        elif await cardtrans(pdeck) > await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} & {pdeck[2]}{random.choice(randcard)}**Value**: {await cardtrans(pdeck)}\n## You won, you gain `${int(arg1) * 2}`!", view=view)
+                            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += (int(arg1) * 2)
+                        elif await cardtrans(pdeck) < await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} & {pdeck[2]}{random.choice(randcard)} **Value**: {await cardtrans(pdeck)}\n## You lost, better luck next time!", view=view)
+                            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg1)
+                        elif await cardtrans(pdeck) == await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} & {pdeck[2]}{random.choice(randcard)}**Value**: {await cardtrans(pdeck)}\n## It's a tie, nobody wins!", view=view)
+                        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["blackjack"]["t"] = 0
+                        await update_data(d)
+                async def button2_callback(interaction:discord.Interaction): #stay button
+                    if interaction.user.name == ctx.author.name:
+                        await interaction.response.edit_message(content=f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & ?{random.choice(randcard)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)}", view=view)
+                        view.remove_item(button)
+                        view.remove_item(button2)
+                        if await cardtrans(pdeck) > await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(pdeck)}\n## You won, you gain `${int(arg1) * 2}`!", view=view)
+                            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] += (int(arg1) * 2)
+                        elif await cardtrans(pdeck) < await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(pdeck)}\n## You lost, better luck next time!", view=view)
+                            d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["$"] -= int(arg1)
+                        elif await cardtrans(pdeck) == await cardtrans(bdeck):
+                            await interaction.followup.edit_message(message_id= interaction.message.id, content= f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & {bdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(bdeck)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)} **Value**: {await cardtrans(pdeck)}\n## It's a tie, nobody wins!", view=view)
+                        d["guilds"][str(ctx.guild.id)]["accounts"]["users"][str(ctx.author.id)]["cds"]["blackjack"]["t"] = 0
+                        await update_data(d)
+                button.callback = button_callback
+                button2.callback = button2_callback
+                view = discord.ui.View()
+                view.add_item(button); view.add_item(button2)
+                bdeck = []; bdeck.append(random.choice(dvalues)); bdeck.append(random.choice(dvalues))
+                pdeck = []; pdeck.append(random.choice(values)); pdeck.append(random.choice(values))
+                await ctx.reply(f"**Dealer's Deck**: {bdeck[0]}{random.choice(randcard)} & ?{random.choice(randcard)}\n**{ctx.author.display_name}'s Deck**: {pdeck[0]}{random.choice(randcard)} & {pdeck[1]}{random.choice(randcard)}", view=view)
+            else:
+                await ctx.reply(f"Can't bet more than you have!")
+        else:
+            await ctx.reply(f"You can't play multiple games at the same time!")
+@client.command()
+async def stocks(ctx: discord.Message):
+    pass
+@client.command()
+async def org(ctx: discord.Message):
+    pass
+@client.command()
+async def plots(ctx: discord.Message):
+    pass
 @client.command(name="?")
 async def help(ctx: discord.Message):
     d = await get_data()
-    await ctx.reply("## Commmands\n- `$profile`: <optional: user> - Tells you information about this user's account!\n- `$stats` - Tells you how many times you've done certain actions\n- `$money`: <required: bank | unbank | round | give> <req: amount | 'all'> - Allows you to bank and unbank your money\n- `$work` - Make a random amount of money by working an odd job\n- `$slots` - Roll the slots, increase the jackpot or win it!\n- `$roulette` <required: amount> - Spin the wheel and double or more your bet!\n- `$rob` <required: user> - Rob someone or get fined (oh no!)!\n- `$suggest`: <required: suggestion> <IN PROGRESS>")
+    await ctx.reply("## Commmands\n- `$profile`: <optional: user> - Tells you information about this user's account!\n- `$stats` - Tells you how many times you've done certain actions\n- `$money`: <required: bank | unbank | round | give> <req: amount | 'all'> - Allows you to bank and unbank your money\n- `$work` - Make a random amount of money by working an odd job\n- `$slots` - Roll the slots, increase the jackpot or win it!\n- `$roulette` <required: amount> - Spin the wheel and double or more your bet!\n- `$rob` <required: user> - Rob someone or get fined (oh no!)!\n- `$bank` <required: loans | loan> <optional: payback(if loan) | amount to be loaned(if loan)>\n- `$blackjack` <required: amount>")
     if ctx.author.id in d["guilds"][str(ctx.guild.id)]["admins"] or ctx.author.id == ctx.guild.owner_id or ctx.author.id in d["developers"]:
         await ctx.reply("## Admin Commands\n- `$give-money`: <required: user> <required: amount>\n- `$clear-cooldowns`: <required: user>\n- `$add-admin`: <required: user>\n- `$remove-admin`: <required: user>\n- `$annoy`: <required: user> <required: times> <optional: message>\n- `$set-money`: <required: user> <required: amount>\n- `$admins` - Tells you the admins in the server")
 #admin commands
@@ -417,7 +533,6 @@ async def givemoney(ctx: discord.Message, arg1, arg2):
             await ctx.reply("This user doesn't exist!")
     else:
         await ctx.reply("You have to be an admin, server owner, or a developer to use this command!")
-
 @client.command(name="set-money")
 async def setmoney(ctx: discord.Message, arg1, arg2):
     d = await get_data()
@@ -433,7 +548,6 @@ async def setmoney(ctx: discord.Message, arg1, arg2):
             await ctx.reply("This user doesn't exist!")
     else:
         await ctx.reply("You have to be an admin, server owner, or a developer to use this command!")
-
 @client.command("clear-cooldowns")
 async def clearcooldowns(ctx: discord.Message, arg1):
     d = await get_data()
